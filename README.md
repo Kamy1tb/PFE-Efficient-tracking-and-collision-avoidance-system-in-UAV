@@ -21,7 +21,7 @@ The simulation environment for the project utilizes the Airsim simulator, which 
 
 ### Step 2: Clone AirSim Repository
 - Clone the AirSim GitHub repository locally using the following command:
-git clone https://github.com/microsoft/AirSim.git
+[git clone https://github.com/microsoft/AirSim.git]
 
 ### Step 3: Install Visual Studio 2022
 - Download and install Visual Studio 2022 from [this link](https://visualstudio.microsoft.com/vs/community/).
