@@ -51,3 +51,6 @@ This will generate the `Unreal\Plugins` directory within the AirSim directory.
 - Update the IP addresses in both the `settings.json` file and the `client.py` file available in the `PythonClient` folder.
 
 Now you're ready to utilize the AirSim Python API seamlessly.
+
+> [!NOTE]
+> you can follow this tutorial step-by-step to clean build Airsim in unreal engine : [this link](https://www.youtube.com/watch?v=BVkN3CCMg4A&t=1115s).
