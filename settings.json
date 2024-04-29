@@ -1,0 +1,89 @@
+{
+    "SettingsVersion": 1.2,
+    "SimMode": "Multirotor",
+    "LocalHostIp": "172.20.10.2",
+    "ApiServerPort": 41451,
+    "Vehicles" : {
+      "Drone1" : {
+          "VehicleType" : "SimpleFlight",
+          "AutoCreate" : true,
+          "CameraDefaults": {
+            "CaptureSettings": [
+            {
+            "Width": 4320,
+            "Height": 2160,
+            "FOV_Degrees": 90
+            }
+            ]
+            },
+          "Cameras" : {
+            
+
+              "high_res": {
+                  "CaptureSettings" : [
+                      {
+                          "ImageType" : 0,
+                          "Width" : 4320,
+                          "Height" : 2160
+                      }
+                  ],
+                  "X": 0.50, "Y": 0.00, "Z": 0.10,
+                  "Pitch": 0.0, "Roll": 0.0, "Yaw": 0.0
+              },
+              "low_res": {
+                  "CaptureSettings" : [
+                      {
+                          "ImageType" : 0,
+                          "Width" : 256,
+                          "Height" : 144
+                      }
+                  ],
+                  "X": 0.50, "Y": 0.00, "Z": 0.10,
+                  "Pitch": 0.0, "Roll": 0.0, "Yaw": 0.0
+              }
+          },
+
+          "Sensors": {
+            "Barometer":{
+                "SensorType": 1,
+                "Enabled": true,
+                "PressureFactorSigma": 0.0001825
+            },
+            "MyLidar1": {
+                "SensorType": 6,
+                    "Enabled" : true,
+                    "NumberOfChannels": 1,
+                    "RotationsPerSecond": 10,
+                    "Range":12,
+                    "PointsPerSecond": 8000,
+                    "X": 0, "Y": 0, "Z": -1,
+                    "Roll": 0, "Pitch": 90, "Yaw" : 0,
+                    "VerticalFOVUpper": 0,
+                    "VerticalFOVLower": 0,
+                    "HorizontalFOVStart": 0,
+                    "HorizontalFOVEnd": 0,
+                    "DrawDebugPoints": true,
+                    "DataFrame": "VehicleInertialFrame"
+            },
+            "MyLidar2": {
+                "SensorType": 6,
+                "Enabled" : true,
+                "NumberOfChannels": 1,
+                "RotationsPerSecond": 10,
+                "Range":12,
+                "PointsPerSecond": 8000,
+                "X": 0, "Y": 0, "Z": -1,
+                "Roll": 90, "Pitch": 90, "Yaw" : 0,
+                "VerticalFOVUpper": 0,
+                "VerticalFOVLower": 0,
+                "HorizontalFOVStart": 0,
+                "HorizontalFOVEnd": 0,
+                "DrawDebugPoints": true,
+                "DataFrame": "VehicleInertialFrame"
+        }
+
+      }
+  }
+}
+  }
+  
