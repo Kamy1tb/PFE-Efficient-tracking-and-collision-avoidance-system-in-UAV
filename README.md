@@ -21,7 +21,7 @@ The simulation environment for the project utilizes the Airsim simulator, which 
 
 ### Step 2: Clone AirSim Repository
 - Clone the AirSim GitHub repository locally using the following command:
-[git clone https://github.com/microsoft/AirSim.git]
+`git clone https://github.com/microsoft/AirSim.git`
 
 ### Step 3: Install Visual Studio 2022
 - Download and install Visual Studio 2022 from [this link](https://visualstudio.microsoft.com/vs/community/).
@@ -53,4 +53,4 @@ This will generate the `Unreal\Plugins` directory within the AirSim directory.
 Now you're ready to utilize the AirSim Python API seamlessly.
 
 > [!NOTE]
-> you can follow this tutorial step-by-step to clean build Airsim in unreal engine : [this link](https://www.youtube.com/watch?v=BVkN3CCMg4A&t=1115s).
+> you can follow this tutorial step-by-step to clean build Airsim in unreal engine : [tutorial](https://www.youtube.com/watch?v=BVkN3CCMg4A&t=1115s).
