@@ -76,32 +76,16 @@ class AirSimClientDrone:
 
 
 if __name__ == "__main__":
-    path_raw =  r"C:\Users\tkamy\Documents\Unreal Projects\Airsim_Taibi\PythonClient\multirotor\training_data\raw"
-    path_labels = r"C:\Users\tkamy\Documents\Unreal Projects\Airsim_Taibi\PythonClient\multirotor\training_data\labels"
-    path_boxes = r"C:\Users\tkamy\Documents\Unreal Projects\Airsim_Taibi\PythonClient\multirotor\training_data\boxes"
+
     drone = AirSimClientDrone("Drone1")
     drone2 = AirSimClientDrone("Drone2")
-    drone.takeoff(-10,True) 
-    drone2.takeoff(-10,True)
     position = drone.get_position()
-    for i in range(50):
-        drone.move(50,0,position.z_val,4)
-        drone2.move(50,0,position.z_val,4)
-        raw = drone.take_raw_photo("high_res")
-        photo = raw.copy()
-        photo,cylinders = drone.take_box_photo("Drone2","high_res",photo)
-        
-        try:
-            drone.box_info(0,cylinders[0].box2D.min.x_val,cylinders[0].box2D.min.y_val,cylinders[0].box2D.max.x_val,cylinders[0].box2D.max.y_val,720,576,path_labels,i)
-        except IndexError:
-            print("No box detected")
-        else:
-            drone.save_photo(raw,i,path_raw)
-            drone.save_photo(photo,i,path_boxes)
-
-    drone.rotate(90,1)
-    drone.move(50,50,position.z_val,4)
-    #drone.rotate(90,1)
-    #drone.move(drone.initial_position.x_val,drone.initial_position.y_val,drone.initial_position.z_val,4)
-    drone.land()
-    
+    position2 = drone2.get_position()
+    print("postion = {}".format(position))
+    print("postion2 = {}".format(position2))
+    drone.takeoff(-10,True) 
+    drone2.takeoff(-10,True) 
+    position = drone.get_position()
+    position2 = drone2.get_position()
+    print("postion = {}".format(position))
+    print("postion2 = {}".format(position2))
