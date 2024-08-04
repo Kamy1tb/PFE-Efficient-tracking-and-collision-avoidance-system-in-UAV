@@ -13,7 +13,7 @@ import logging
 class VehicleClient:
     def __init__(self, ip = "", port = 41451 , timeout_value = 3600):
         if (ip == ""):
-            ip = "172.20.10.2"
+            ip = "127.0.0.1"
         self.client = msgpackrpc.Client(msgpackrpc.Address(ip, port), timeout = timeout_value, pack_encoding = 'utf-8', unpack_encoding = 'utf-8')
 
 #----------------------------------- Common vehicle APIs ---------------------------------------------
@@ -1115,7 +1115,7 @@ class VehicleClient:
 
 #----------------------------------- Multirotor APIs ---------------------------------------------
 class MultirotorClient(VehicleClient, object):
-    def __init__(self, ip = "172.20.10.2", port = 41451, timeout_value = 3600):
+    def __init__(self, ip = "127.0.0.1", port = 41451, timeout_value = 3600):
         super(MultirotorClient, self).__init__(ip, port, timeout_value)
 
     def takeoffAsync(self, timeout_sec = 20, vehicle_name = ''):
