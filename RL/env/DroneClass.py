@@ -114,6 +114,12 @@ class AirSimClientDrone:
             self.client.moveToPositionAsync(x, y, z,speed,vehicle_name=self.drone_name)
         print(f"{self.drone_name} moved to {x}, {y}, {z}")
 
+    def move_by_velocity(self,vx,vy,vz,time,join=False):
+        if join:
+            self.client.moveByVelocityAsync(vx,vy,vz,time,vehicle_name=self.drone_name).join()
+        else:
+            self.client.moveByVelocityAsync(vx,vy,vz,time,vehicle_name=self.drone_name)
+        print(f"{self.drone_name} moved to {vx}, {vy}, {vz}")
 
     def rotate(self, yaw,rotation_duration):
         self.client.rotateByYawRateAsync(yaw, rotation_duration,vehicle_name=self.drone_name).join()
@@ -185,7 +191,7 @@ class AirSimClientDrone:
         distance = self.client.getDistanceSensorData(f"Distance{num_sensor}")
         return distance
     
-    
+
     
     def get_estimated_distance(self,real_width,pixel_width,focal_length,camera_width):
         return focal_length * real_width / (pixel_width* camera_width)

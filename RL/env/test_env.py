@@ -6,7 +6,7 @@ if __name__ == "__main__":
     drone2 = AirSimClientDrone("Drone2")
     pos = drone2.get_position()
     pos = pos.tolist()
-    waypoints = [(pos[0]+5,pos[1],pos[2]-6),(pos[0]+50, pos[1]+50, pos[2]-10)]
+    waypoints = [(5,2,0,5),(7,2,3,5)]
     # Creating environment of the tracking drone 
     env = Environment("Drone1",10)
     print("env created")
@@ -18,8 +18,8 @@ if __name__ == "__main__":
   
     #Move the drones to the waypoints
     for waypoint in waypoints:
-        drone2.move(waypoint[0],waypoint[1],waypoint[2],5,True)
-        env.drone.move(waypoint[0],waypoint[1],waypoint[2],5,True)
+        drone2.move_by_velocity(waypoint[0],waypoint[1],waypoint[2],waypoint[3])
+        env.drone.move_by_velocity(waypoint[0],waypoint[1],waypoint[2],waypoint[3])
         
         time.sleep(2)
 

@@ -21,7 +21,7 @@ class Environment(object):
         self.render = False
         print(self.distances)
         # Initialize state
-        self.state = []
+        self.state= [0 for i in range(22)]
         self.generate_state()
         
         # Define discrete action space
@@ -61,7 +61,7 @@ class Environment(object):
         else:
             rc = 0
             done = 0
-            
+
         if self.state[7] != -1:
             rfov = -10
         else:
