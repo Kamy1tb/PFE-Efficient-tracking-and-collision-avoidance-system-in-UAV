@@ -13,13 +13,12 @@ import json
 import torch
 from agent.agent import Agent
 from agent.helpers.rl_agent_template import *
-from env.environment import *
+from env.environment import Environment
 from helpers.utils import *
 
 def main():
 
-    n_games = 5000                   
-    complete_check = False
+    n_games = 5                   
     eps_dec = 1./n_games                 
     environment = Environment()
 
@@ -52,19 +51,19 @@ def main():
 
     for episode in range(n_games):
         state = environment.reset()
-        done = False
+        done = False  
         score = 0
     
         while not done:
-            actions = agent.choose_action(state)
+            action = agent.choose_action(state)
             next_state, reward, done, info = environment.step(action)
-            agent.store_transition(state, action[i], next_state, reward, done)   
+            agent.store_transition(state,action, next_state, reward, done)   
             agent.step_learn() 
             state = next_state
             score += reward   
 
         if episode % 2 == 0:
-            print('episode ', episode, 'score %.1f' % score, 'Final_soc %.1f' % Reward_Final_soc , 'cycle %.1f' %  environment.cycle)
+            print('episode ', episode, 'score %.1f' % score)
         
         agent.episode_learn()
         agent.update_learn_params()

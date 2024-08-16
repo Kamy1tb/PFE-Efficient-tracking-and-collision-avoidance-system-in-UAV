@@ -1,12 +1,42 @@
+from airsim.types import Vector3r
+import setup_path
+import airsim
+import numpy as np
+import math
+import time
+from DroneClass import AirSimClientDrone
+from gym import spaces
+
 __version__ = '1.0'
 __authors__ = 'Sihem Ouahouah & Miloud Bagaa'
 __author_emails__ = 'sihem.ouahouah@aalto.fi & miloud.bagaa@aalto.fi'
 
 class Environment(object):
-
-    def __init__(self, areaSideSize = ENV_SIZE, observableAccessPoints = OBSERVABLE_ACCESS_POINTS, observableEvents = OBSERVABLE_EVENTS):
+    def __init__(self, drone_name="Drone1", step_length=10, areaSideSize=None, observableAccessPoints=None, observableEvents=None):
+        self.drone_name = drone_name
+        self.drone = AirSimClientDrone(drone_name)
+        self.step_length = step_length
+        self.camera_name = "high_res"
+        self.distances = self.drone.get_distance_all()
         self.render = False
-        self.reset()
+        print(self.distances)
+        # Initialize state
+        self.state = []
+        self.generate_state()
+        
+        # Define discrete action space
+        self.num_bins = 10
+        self.discretized_values = np.linspace(-1, 1, self.num_bins)
+        self.action_space = spaces.Discrete(self.num_bins * self.num_bins)
+
+        # Initialize environment properties
+        self.areaSideSize = areaSideSize
+        self.observableAccessPoints = observableAccessPoints
+        self.observableEvents = observableEvents
+        self.steps = 0
+        self.nbCollision = 0
+        self.observation_space = self.generate_state()
+
 
 
     def set_render(self):
@@ -16,21 +46,123 @@ class Environment(object):
         self.render = False
 
     def reset(self):
+        print("reset")
+        self.drone.move(0, 0, 0, 7, True)
+        self.generate_state()
         self.steps = 0
-        self.observation_space = self.generate_state()
         self.nbCollision = 0
-
         return self.observation_space
+    
+    def _compute_reward(self):
+        collision = self.drone.detect_collision()
+        if collision:
+            rc = -50
+            done = 1
+        else:
+            rc = 0
+            done = 0
+            
+        if self.state[7] != -1:
+            rfov = -10
+        else:
+            rfov = 0
+
+        if self.state[6] < 30 and self.state[6] > 5:
+            rd = 1 - abs(self.state[6] - 15) / 25
+        elif self.state[6] >= 30:
+            rd = -abs(self.state[6] - 30)
+        elif self.state[6] <= 5:
+            rd = -abs(self.state[6] - 5)
+        rd = rd * 0.05
+
+        if done and not collision:
+            rf = 50
+        else:
+            rf = 0
+
+        rdir = 0.2 * ((self.state[17] - 10) / 10)
+        r = 0
+        for i in self.state[13:]:
+            r += (1/i - 1/15)
+        r *= -1.5
+
+        if r < 0 and r > -0.5:
+            robs = r
+        elif r < -0.5:
+            robs = -0.5
+
+        reward = rc + rfov + rd + rf + rdir + robs
+        return reward, done
+    
+
+    def _do_action(self, action):
+        quad_offset = self.interpret_action(action)
+        quad_vel = self.drone.get_velocity()
+        vp = np.sqrt(quad_vel.x_val**2 + quad_vel.y_val**2 + quad_vel.z_val**2)
+        a_vp = (vp + quad_offset[0]) / vp
+        new_x = np.cos(quad_offset[1] * quad_vel.x_val) - np.sin(quad_offset[1] * quad_vel.y_val)
+        new_y = np.sin(quad_offset[1] * quad_vel.x_val) + np.cos(quad_offset[1] * quad_vel.y_val)
+        self.drone.moveByVelocityAsync(
+            new_x * a_vp,
+            new_y * a_vp,
+            quad_vel.z_val,
+            5
+        ).join()
+
+    def interpret_action(self, action):
+        x_index = action // self.num_bins
+        y_index = action % self.num_bins
+        x = self.discretized_values[x_index]
+        y = self.discretized_values[y_index]
+        delta_speed = 2 * x
+        delta_angle = 50 * y
+        return [delta_speed, delta_angle]
 
 
     def step(self, action_agent):
-        state = 0
-        reward = 0
-        done = False
+        state = self.generate_state()
+        self._do_action(action_agent)
+        reward, done = self._compute_reward()
         info = []
-
         return state, reward, done, info
 
     def generate_state(self):
-        state = []
-        return state
+        raw = self.drone.take_raw_photo("high_res")
+        png,cylinders = self.drone.take_box_photo(["Drone2"],"high_res",raw)
+        list,info = self.drone.box_info(cylinders,640,360)
+        try:
+            self.state = [
+            self.drone.get_position()[0],  # position xt
+            self.drone.get_position()[1],  # position yt
+            self.drone.get_position()[2],  # position zt
+            self.state[0],  # position xt-1
+            self.state[1],  # position yt-1
+            self.state[2],  # position zt-1
+            self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640), # distance target
+            info[0][0],info[0][1], #position target xt, yt
+            self.state[7],  # position target xt-1
+            self.state[8],  # position target yt-1
+            self.state[9],  # position target xt-2
+            self.state[10],  # position target yt-2
+        ] + self.distances
+            
+        except:
+            self.state = [
+            self.drone.get_position()[0],  # position xt
+            self.drone.get_position()[1],  # position yt
+            self.drone.get_position()[2],  # position zt
+            self.state[0],  # position xt-1
+            self.state[1],  # position yt-1
+            self.state[2],  # position zt-1
+            -1, # distance target
+            -1,-1, #position target xt, yt
+            self.state[7],  # position target xt-1
+            self.state[8],  # position target yt-1
+            self.state[9],  # position target xt-2
+            self.state[10],  # position target yt-2
+        ] + self.distances
+
+            
+        
+
+        return self.state
