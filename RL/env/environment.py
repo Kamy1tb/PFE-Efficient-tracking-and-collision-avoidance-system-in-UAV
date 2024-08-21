@@ -1,10 +1,10 @@
-from airsim.types import Vector3r
-import setup_path
-import airsim
+from env.airsim.types import Vector3r
+import env.setup_path
+import env.airsim
 import numpy as np
 import math
 import time
-from DroneClass import AirSimClientDrone
+from env.DroneClass import AirSimClientDrone
 from gym import spaces
 
 __version__ = '1.0'
@@ -26,8 +26,9 @@ class Environment(object):
         
         # Define discrete action space
         self.num_bins = 10
+        self.time_seconds = 3
         self.discretized_values = np.linspace(-1, 1, self.num_bins)
-        self.action_space = spaces.Discrete(self.num_bins * self.num_bins)
+        self.action_space = spaces.Discrete(self.num_bins * self.num_bins * self.time_seconds)
 
         # Initialize environment properties
         self.areaSideSize = areaSideSize
@@ -47,7 +48,9 @@ class Environment(object):
 
     def reset(self):
         print("reset")
-        self.drone.move(0, 0, 0, 7, True)
+        self.drone.client.reset()
+        self.drone.client.enableApiControl(True)
+        self.drone.client.armDisarm(True)
         self.generate_state()
         self.steps = 0
         self.nbCollision = 0
@@ -102,21 +105,23 @@ class Environment(object):
         a_vp = (vp + quad_offset[0]) / vp
         new_x = np.cos(quad_offset[1] * quad_vel.x_val) - np.sin(quad_offset[1] * quad_vel.y_val)
         new_y = np.sin(quad_offset[1] * quad_vel.x_val) + np.cos(quad_offset[1] * quad_vel.y_val)
-        self.drone.moveByVelocityAsync(
+        self.drone.move_by_velocity(
             new_x * a_vp,
             new_y * a_vp,
             quad_vel.z_val,
-            5
-        ).join()
+            quad_offset[2],
+            True
+        )
 
     def interpret_action(self, action):
+        duration = action // 100
         x_index = action // self.num_bins
         y_index = action % self.num_bins
         x = self.discretized_values[x_index]
         y = self.discretized_values[y_index]
         delta_speed = 2 * x
         delta_angle = 50 * y
-        return [delta_speed, delta_angle]
+        return [delta_speed, delta_angle,duration]
 
 
     def step(self, action_agent):
@@ -127,10 +132,12 @@ class Environment(object):
         return state, reward, done, info
 
     def generate_state(self):
-        raw = self.drone.take_raw_photo("high_res")
-        png,cylinders = self.drone.take_box_photo(["Drone2"],"high_res",raw)
-        list,info = self.drone.box_info(cylinders,640,360)
+        
+        
         try:
+            raw = self.drone.take_raw_photo("high_res")
+            png,cylinders = self.drone.take_box_photo(["Drone2"],"high_res",raw)
+            list,info = self.drone.box_info(cylinders,640,360)
             self.state = [
             self.drone.get_position()[0],  # position xt
             self.drone.get_position()[1],  # position yt

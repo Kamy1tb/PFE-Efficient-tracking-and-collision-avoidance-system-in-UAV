@@ -4,6 +4,7 @@ __authors__ = 'Miloud Bagaa'
 __author_emails__ = 'miloud.bagaa@uqtr.ca, bagmoul@gmail.com'
 
 import sys, os
+# Add the 'env' directory to the Python path
 from unipath import Path
 
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   
@@ -15,6 +16,33 @@ from agent.agent import Agent
 from agent.helpers.rl_agent_template import *
 from env.environment import Environment
 from helpers.utils import *
+import threading
+
+
+velocity = 1  # Vitesse en m/s
+duration = 1  # Durée de chaque mouvement en secondes
+waypoint_distance = 10  # Distance entre chaque waypoint en mètres
+threads = []
+
+waypoints_track = [
+    (waypoint_distance, 0, 0),  # Premier waypoint (droit)
+    (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
+    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
+    (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (7 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
+    (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
+    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
+    (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (7 * waypoint_distance, 0, 0)  # cinquième waypoint (droit)
+    ]
+
+
+def control_drone_target(client, waypoints,duration):
+        client.drone.takeoff(-4,True)
+        for waypoint in waypoints:
+            x, y, z = waypoint
+            client.drone.move_by_velocity(x, y, z, duration,True)
+
 
 def main():
 

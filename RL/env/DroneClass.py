@@ -1,11 +1,10 @@
-
-import setup_path
-import airsim as airsim
+import env.setup_path
+import env.airsim as airsim
 import cv2
 import pprint
 import os
 import math
-from model import YOLOModel
+from env.model import YOLOModel
 import time 
 import numpy as np
 
@@ -37,8 +36,7 @@ class AirSimClientDrone:
             self.client.takeoffAsync(vehicle_name=self.drone_name).join()
             self.client.moveToPositionAsync(0,0, z,4,vehicle_name=self.drone_name).join()
 
-    def get_position(self):
-        print("position :")
+    def get_position(self):       
         return self.client.getMultirotorState(self.drone_name).kinematics_estimated.position.to_numpy_array()
     
     
@@ -157,6 +155,7 @@ class AirSimClientDrone:
         with open(filepath, 'w') as file:
             for line in liste:
                 file.write(line+"\n")
+                
     def detect_collision(self):
         collision_info = self.client.simGetCollisionInfo()
         if collision_info.has_collided and collision_info.object_id != -1:
