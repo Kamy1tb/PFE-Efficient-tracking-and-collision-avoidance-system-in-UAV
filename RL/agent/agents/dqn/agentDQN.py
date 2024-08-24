@@ -27,7 +27,7 @@ class Agent(RLAgent):
         self.eps_dec = params["eps_dec"]
         self.action_space = params["action_space"]
         self.state_space_dim = len(params["state_space"])
-        self.n_actions = len(self.action_space)
+        self.n_actions = self.action_space.n
         self.hidden_size = params["hidden_size"]
         self.replay_buffer_size = params["replay_buffer_size"]
         self.batch_size = params["batch_size"]
@@ -101,7 +101,7 @@ class Agent(RLAgent):
                 return action
 
         if np.random.random() < self.epsilon:
-            return np.random.choice(self.action_space)
+            return np.random.choice(self.action_space.n)
         else:
             with T.no_grad():
                 state = T.tensor(state, dtype=T.float).to(self.policy_net.device)
