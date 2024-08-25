@@ -71,8 +71,9 @@ def main():
 
     # Number of layers and activation functions.
     network_spec = [
-        dict(type='dense', size=500, activation='relu'),  # 256         
-        dict(type='dense', size=300, activation='relu'),  # 128
+        dict(type='dense', size=1024, activation='relu'),  # 256         
+        dict(type='dense', size=1024, activation='relu'),  # 128
+        dict(type='dense', size=1024, activation='relu'),
         dict(type='dense', size=100, activation='relu')    # 64
     ]
 
