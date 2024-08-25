@@ -23,6 +23,7 @@ class Agent(RLAgent):
         self.number_episodes = 0
         self.lr = params["lr"]
         self.epsilon = params["eps_start"]
+        self.eps_start = params["eps_start"]
         self.eps_end = params["eps_end"]
         self.eps_dec = params["eps_dec"]
         self.action_space = params["action_space"]
@@ -88,7 +89,10 @@ class Agent(RLAgent):
         self.policy_net.optimizer.step()
 
     def update_learn_params(self):
-        self.epsilon = self.epsilon - self.eps_dec \
+        """elf.epsilon = self.epsilon - self.eps_dec \
+            if self.epsilon > self.eps_end else self.eps_end"""
+
+        self.epsilon = self.eps_end + (self.eps_start - self.eps_end) * np.exp(-self.eps_dec * self.number_episodes)\
             if self.epsilon > self.eps_end else self.eps_end
 
     def choose_action(self, state):
