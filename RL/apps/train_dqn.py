@@ -53,6 +53,7 @@ def control_drone_target(env, waypoints,duration):
         
 
 def train_drone(agent,env,state,score):
+    ac = 0
     while not env.is_done():
         action = agent.choose_action(state)
         print("action ",action)
@@ -62,6 +63,8 @@ def train_drone(agent,env,state,score):
         agent.step_learn() 
         state = next_state
         score[0] += reward
+        ac +=1
+    return ac
 
 def main():
 
@@ -74,7 +77,7 @@ def main():
         dict(type='dense', size=1024, activation='relu'),  # 256         
         dict(type='dense', size=1024, activation='relu'),  # 128
         dict(type='dense', size=1024, activation='relu'),
-        dict(type='dense', size=100, activation='relu')    # 64
+        dict(type='dense', size=1024, activation='relu')    # 64
     ]
 
     params = {
@@ -91,7 +94,8 @@ def main():
             "network_spec": network_spec,
             "target_update": 8,
             }
-
+    with open("./output/log/scores", "w") as f:
+         f.write("")
 
     agent = Agent("DQN")
     agent.configure(params=params)
@@ -127,6 +131,8 @@ def main():
         agent.episode_learn()
         agent.update_learn_params()
         scores.append(score[0])
+        with open("./output/log/scores", "a") as f:
+            f.write(f"{episode} , {score[0]} , {agent.epsilon}")
         
         if episode % 50 == 0:
             avg_score = np.mean(scores[-50:])
