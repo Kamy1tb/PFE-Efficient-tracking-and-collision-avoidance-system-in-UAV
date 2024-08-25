@@ -92,8 +92,7 @@ class Agent(RLAgent):
         """elf.epsilon = self.epsilon - self.eps_dec \
             if self.epsilon > self.eps_end else self.eps_end"""
 
-        self.epsilon = self.eps_end + (self.eps_start - self.eps_end) * np.exp(-self.eps_dec * self.number_episodes)\
-            if self.epsilon > self.eps_end else self.eps_end
+        self.epsilon = self.eps_end + (self.eps_start - self.eps_end) * np.exp(-self.eps_dec * self.number_episodes)
 
     def choose_action(self, state):
         if self.eval_mode:
