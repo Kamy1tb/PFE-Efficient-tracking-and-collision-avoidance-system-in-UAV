@@ -11,10 +11,16 @@ import threading
 
 import time
 def control_drone(client, waypoints,duration):
+            
             client.takeoff(-3,True)
             for waypoint in waypoints:
                 x, y, z = waypoint
                 client.move_by_velocity(x, y, z, duration,True)
+                quad_vel = client.get_velocity()
+                drone_state = client.client.getMultirotorState()
+                vp = drone_state.kinematics_estimated.linear_velocity
+                print("velocity 1: ",quad_vel) 
+                print("velocity 2: ",vp)
 
 if __name__ == "__main__":
     env = Environment("Drone1","Drone2",10)
@@ -22,22 +28,22 @@ if __name__ == "__main__":
     drone2 = env.drone_target
     pos = drone2.get_position()
     velocity = 1  # Vitesse en m/s
-    duration = 1  # Durée de chaque mouvement en secondes
-    waypoint_distance = 10  # Distance entre chaque waypoint en mètres
+    duration = 2  # Durée de chaque mouvement en secondes
+    waypoint_distance = 3  # Distance entre chaque waypoint en mètres
     threads = []
 
     # Waypoints : ici, nous simulerons des arbres à des positions spécifiques
     waypoints1 = [
     (waypoint_distance, 0, 0),  # Premier waypoint (droit)
     (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
+    (2 * waypoint_distance, 0, 0),  # Troisième waypoint (droit)
     (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (7 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
+    (4 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
     (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
+    (2 * waypoint_distance, 0, 0),  # Troisième waypoint (droit)
     (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (7 * waypoint_distance, 0, 0)  # cinquième waypoint (droit)
-
+    (3 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
+    (0,0,0)
 
     ]
 
@@ -55,23 +61,23 @@ if __name__ == "__main__":
 
     ]
 
+    while True:
+        print("initial position : ",drone1.get_position())
 
-    print("initial position : ",drone1.get_position())
+        # Création et démarrage des threads
+        thread1 = threading.Thread(target=control_drone, args=(drone1, waypoints1,duration))
+        #thread2 = threading.Thread(target=control_drone, args=(drone2, waypoints2, duration))
+        thread1.start()
+        #thread2.start()
 
-    # Création et démarrage des threads
-    thread1 = threading.Thread(target=control_drone, args=(drone1, waypoints1,duration))
-    thread2 = threading.Thread(target=control_drone, args=(drone2, waypoints2, duration))
-    thread1.start()
-    thread2.start()
-
-    # Attendre la fin des threads
-    thread1.join()
-    thread2.join()
-    time.sleep(10)
-    print("final position : ",drone1.get_position())
-    drone2.client.reset()
-    drone2.client.enableApiControl(True)
-    drone2.client.armDisarm(True)
+        # Attendre la fin des threads
+        thread1.join()
+        #thread2.join()
+        print("final position : ",drone1.get_position())
+          
+        env.reset()
+        #drone2.client.enableApiControl(True)
+        #drone2.client.armDisarm(True)
     #drone1 = AirSimClientDrone("Drone1")
 
     #print(drone1.get_position())

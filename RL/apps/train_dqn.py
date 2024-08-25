@@ -21,47 +21,51 @@ import threading
 import time
 
 velocity = 1  # Vitesse en m/s
-duration = 1  # Durée de chaque mouvement en secondes
-waypoint_distance = 10  # Distance entre chaque waypoint en mètres
+duration = 2  # Durée de chaque mouvement en secondes
+waypoint_distance = 3  # Distance entre chaque waypoint en mètres
 threads = []
 
 waypoints_track = [
     (waypoint_distance, 0, 0),  # Premier waypoint (droit)
     (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
+    (2 * waypoint_distance, 0, 0),  # Troisième waypoint (droit)
     (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (7 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
+    (4 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
     (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
+    (2 * waypoint_distance, 0, 0),  # Troisième waypoint (droit)
     (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (7 * waypoint_distance, 0, 0)  # cinquième waypoint (droit)
+    (3 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
+    (0,0,0)
+
     ]
 
 
 def control_drone_target(env, waypoints,duration):
-        print("taking off drone 2")     
-        env.drone_target.takeoff(-4, True)
-        print("drone 2 took off")
         for waypoint in waypoints:
             print("drone 2 ",waypoint)
             x, y, z = waypoint
-            env.drone_target.move_by_velocity(x, y, z, duration,True)
-        time.sleep(3)
+            if env.drone_target.detect_collision():
+                print("collision detected in drone target")
+                break
+            env.drone_target.move_by_velocity(x, y, z, duration,True)    
+
         env.set_done()
+        
 
 def train_drone(agent,env,state,score):
     while not env.is_done():
         action = agent.choose_action(state)
+        print("action ",action)
         next_state, reward, env.done, info = env.step(action)
+        print("next state ",next_state)
         agent.store_transition(state,action, next_state, reward, env.done)   
         agent.step_learn() 
         state = next_state
         score[0] += reward
-        
 
 def main():
 
-    n_games = 100           
+    n_games = 10000        
     eps_dec = 1./n_games                 
     environment = Environment()
 
@@ -90,17 +94,20 @@ def main():
 
     agent = Agent("DQN")
     agent.configure(params=params)
+    agent.load_model("./output/models/best_model.pth")
 
     scores = []
-
+    best_score = -np.inf
+    avg_score = -np.inf
     for episode in range(n_games):
         print("episode ", episode)
+        environment.done = 0  
         state = environment.reset()
         environment.drone.takeoff(-4, True)
         environment.drone_target.takeoff(-4, True)
 
-        environment.drone.move_by_velocity(0.5, 0, 0, 2, False)
-        environment.done = 0  
+        environment.drone.move_by_velocity(1, 0, 0, 2, False)
+        
         score = [0]
         print("before threads ",environment.done)
         # Create a new thread for drone control
@@ -119,17 +126,24 @@ def main():
         agent.episode_learn()
         agent.update_learn_params()
         scores.append(score[0])
+        
+        if episode % 50 == 0:
+            avg_score = np.mean(scores[-50:])
+            if avg_score > best_score:
+                best_score = avg_score
+                agent.save_model("./output/models/best_model2.pth")
+        
     print("scores ",scores)
 
 
     fname = 'DQN_' + 'Reward' +\
         '_' + str(n_games) + 'games'
 
-    figure_file  = 'RL/output/plots/'  + fname  + '.png'
+    figure_file  = './output/plots/'  + fname  + '.png'
 
     x = [i+1 for i in range(n_games)]
 
-    with open("RL/output/log/scores", "w") as f:
+    with open("./output/log/scores", "w") as f:
          f.write(str(scores))
 
     plot_learning_curve(x, scores, figure_file)

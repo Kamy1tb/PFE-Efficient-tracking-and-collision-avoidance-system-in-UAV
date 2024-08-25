@@ -117,7 +117,7 @@ class AirSimClientDrone:
             self.client.moveByVelocityAsync(vx,vy,vz,time,vehicle_name=self.drone_name).join()
         else:
             self.client.moveByVelocityAsync(vx,vy,vz,time,vehicle_name=self.drone_name)
-        print(f"{self.drone_name} moved to {vx}, {vy}, {vz}")
+        print(f"{self.drone_name} moved with speed vector [{vx}, {vy}, {vz}] with duration {time}")
 
     def rotate(self, yaw,rotation_duration):
         self.client.rotateByYawRateAsync(yaw, rotation_duration,vehicle_name=self.drone_name).join()
@@ -125,7 +125,7 @@ class AirSimClientDrone:
      
 
     def land(self):
-        self.client.landAsync(4,vehicle_name=self.drone_name).join()
+        self.client.landAsync(10,vehicle_name=self.drone_name).join()
 
     def do_random_path(self):
         print("Random path")
@@ -157,9 +157,9 @@ class AirSimClientDrone:
                 file.write(line+"\n")
                 
     def detect_collision(self):
-        collision_info = self.client.simGetCollisionInfo()
+        collision_info = self.client.simGetCollisionInfo(self.drone_name)
         if collision_info.has_collided and collision_info.object_id != -1:
-            print("Collision detected")
+            print("Collision detected for drone %s" % self.drone_name)
             print(f"Nom de l'objet: {collision_info.object_name}")
             return True
         else:
@@ -244,3 +244,10 @@ class AirSimClientDrone:
             predict = model.predict(photo)
             print(predict)
             print(f"Time taken: {time.time()-start_time}")
+
+    def turn_on_api(self):
+        self.client.enableApiControl(True, self.drone_name)
+        self.client.armDisarm(True, self.drone_name)
+    def turn_off_api(self):
+        self.client.enableApiControl(False, self.drone_name)
+        self.client.armDisarm(False, self.drone_name)

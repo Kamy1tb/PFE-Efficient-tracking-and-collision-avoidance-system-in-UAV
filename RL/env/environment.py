@@ -25,7 +25,7 @@ class Environment(object):
         self.render = False
         print(self.distances)
         # Initialize state
-        self.state= [0 for i in range(22)]
+        self.state= [0 for i in range(23)]
         self.generate_state()
         self.done = 0 
         self.lock = threading.Lock()
@@ -66,22 +66,30 @@ class Environment(object):
     def reset(self):
         print("reset")
         '''
-        self.drone.client.enableApiControl(False)
-        self.drone.client.armDisarm(False)
-        self.drone_target.client.enableApiControl(False)
-        self.drone_target.client.armDisarm(False)
-        self.drone.client.reset()
-        self.drone.client.confirmConnection()
-        self.drone.client.enableApiControl(True)
-        self.drone.client.armDisarm(True)
-        self.drone_target.client.confirmConnection()
-        self.drone_target.client.enableApiControl(True)
-        self.drone_target.client.armDisarm(True)
+        
         time.sleep(5)
-        '''
-        self.drone.client.simSetVehiclePose(Vector3r(0, 0, 0), True, "Drone1")
+        drone_target_velocity = self.drone_target.get_velocity()
+        drone_velocity = self.drone.get_velocity()
+        while drone_target_velocity.x_val != 0 or drone_target_velocity.y_val != 0 or drone_target_velocity.z_val != 0 or drone_velocity.x_val != 0 or drone_velocity.y_val != 0 or drone_velocity.z_val != 0:
+            drone_target_velocity = self.drone_target.get_velocity()
+            drone_velocity = self.drone.get_velocity()
+             self.drone.client.simSetVehiclePose(Vector3r(-5, 0, 0), True, "Drone1")
         self.drone_target.client.simSetVehiclePose(Vector3r(5, 0, 0), True,"Drone2")
+        self.drone.land()
+        self.drone_target.land()
+        #self.drone_target.turn_off_api()
+        self.drone.client.reset()
+        self.drone_target.turn_on_api()
+        self.drone.turn_on_api
 
+            time.sleep(1)'''
+        self.drone.turn_off_api()
+
+        self.drone.client.reset()
+
+        self.drone.turn_on_api()
+        self.drone_target.turn_on_api()
+        
 
         self.generate_state()
         self.steps = 0
@@ -96,31 +104,41 @@ class Environment(object):
             self.done = 1
         else:
             rc = 0
-
-
-        if self.state[7] == -1:
+        if self.state[8] == -1:
             rfov = -10
         else:
             rfov = 0
-
-        if self.state[6] < 15 and self.state[6] > 5:
-            rd = 1 - abs(self.state[6] - 10) / 20
-        elif self.state[6] >= 15:
-            rd = -abs(self.state[6] - 15)
-        elif self.state[6] <= 5:
-            rd = -abs(self.state[6] - 5)
-        rd = rd * 0.05
-
-        if self.done and not collision and self.state[7] != -1 and self.state[6] < 15 and self.state[6] > 5:
+        if self.done and not collision and self.state[8] != -1 and self.state[6] <= 25 and self.state[6] >= 15:
             rf = 50
-        elif self.state[7] == -1:
+        elif self.state[8] == -1:
             rf = -50
         else:
             rf = 0
-
-        rdir = 0.2 * ((self.state[17] - 10) / 10)
+        if self.state[7] > 25 and self.state[6] > 25 :
+            r_track = self.state[7] - self.state[6]
+        elif self.state[7] > 25 and self.state[6] <= 25 and self.state[6] > 0:
+            r_track = self.state[7] - 25
+        elif self.state[7] <= 25 and self.state[6] > 25 and self.state[7] > 0:
+            r_track = 25 - self.state[6]
+        else:
+            r_track = 0
+        if 15 <= self.state[6] and self.state[6] <= 25:
+            r_zone = 5
+        elif self.state[6] < 15 : 
+            r_zone = -5
+        else : 
+            r_zone = 0
+        rd = (r_track + r_zone) * 0.05
+        quad_vel = self.drone.get_velocity()
+        vp = np.sqrt(quad_vel.x_val**2 + quad_vel.y_val**2 + quad_vel.z_val**2)
+        if vp < 0.5: 
+            r_v = -0.2 * (0.5 - vp)
+        else : 
+            r_v = 0
+        
+        rdir = 0.2 * ((self.state[18] - 10) / 10)
         r = 0
-        for i in self.state[13:]:
+        for i in self.state[14:]:
             r += (1/i - 1/10)
         r *= -1.5
 
@@ -131,7 +149,7 @@ class Environment(object):
         else:
             robs = 0
 
-        reward = rc + rfov + rd + rf + rdir + robs
+        reward = rc + rfov + rd + rf + rdir + robs + r_v
         return reward, self.done
     
 
@@ -140,8 +158,12 @@ class Environment(object):
         quad_vel = self.drone.get_velocity()
         vp = np.sqrt(quad_vel.x_val**2 + quad_vel.y_val**2 + quad_vel.z_val**2)
         a_vp = (vp + quad_offset[0]) / vp
-        new_x = np.cos(quad_offset[1] * quad_vel.x_val) - np.sin(quad_offset[1] * quad_vel.y_val)
-        new_y = np.sin(quad_offset[1] * quad_vel.x_val) + np.cos(quad_offset[1] * quad_vel.y_val)
+        print("quad_offset = ",quad_offset)
+        print("a_vp = ",a_vp)
+        new_x = np.cos(quad_offset[1] )* quad_vel.x_val - np.sin(quad_offset[1] )* quad_vel.y_val
+        new_y = np.sin(quad_offset[1] ) * quad_vel.x_val+ np.cos(quad_offset[1] )* quad_vel.y_val
+        print("new_x = ",new_x)
+        print("new_y = ",new_y)
         self.drone.move_by_velocity(
             new_x * a_vp,
             new_y * a_vp,
@@ -151,22 +173,22 @@ class Environment(object):
         )
 
     def interpret_action(self, action):
-        duration = action // (self.num_bins ** 2)
+        duration = action // (self.num_bins ** 2) + 1
         x_index = (action % (self.num_bins**2)) // self.num_bins
         y_index = action % self.num_bins
         x = self.discretized_values[x_index]
         y = self.discretized_values[y_index]
-        delta_speed = 2 * x
-        delta_angle = 50 * y
+        delta_speed = 3 * x
+        delta_angle = 30 * y
         return [delta_speed, delta_angle,duration]
 
 
     def step(self, action_agent):
         state = self.generate_state()
         self._do_action(action_agent)
-        reward, self.done = self._compute_reward()
+        reward, done = self._compute_reward()
         info = []
-        return state, reward, self.done, info
+        return state, reward, done, info
 
     def generate_state(self):
         
@@ -183,11 +205,12 @@ class Environment(object):
             self.state[1],  # position yt-1
             self.state[2],  # position zt-1
             self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640), # distance target
+            self.state[6], # distance target t-1
             info[0][0],info[0][1], #position target xt, yt
-            self.state[7],  # position target xt-1
-            self.state[8],  # position target yt-1
-            self.state[9],  # position target xt-2
-            self.state[10],  # position target yt-2
+            self.state[8],  # position target xt-1
+            self.state[9],  # position target yt-1
+            self.state[10],  # position target xt-2
+            self.state[11],  # position target yt-2
         ] + self.distances
             
         except:
@@ -199,11 +222,12 @@ class Environment(object):
             self.state[1],  # position yt-1
             self.state[2],  # position zt-1
             -1, # distance target
+            self.state[6], # distance target t-1
             -1,-1, #position target xt, yt
-            self.state[7],  # position target xt-1
-            self.state[8],  # position target yt-1
-            self.state[9],  # position target xt-2
-            self.state[10],  # position target yt-2
+            self.state[8],  # position target xt-1
+            self.state[9],  # position target yt-1
+            self.state[10],  # position target xt-2
+            self.state[11],  # position target yt-2
         ] + self.distances
 
             

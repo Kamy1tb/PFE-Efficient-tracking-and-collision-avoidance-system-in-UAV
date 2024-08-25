@@ -1,11 +1,18 @@
-import setup_path
-from airsim.types import Vector3r
+import sys, os
+# Add the 'env' directory to the Python path
+from unipath import Path
 
-import airsim
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   
+sys.path.append(BASE_PATH)
+sys.path.append(Path(BASE_PATH).parent)
+import env.setup_path
+from env.airsim.types import Vector3r
+
+import env.airsim
 import numpy as np
 import math
 import time
-from DroneClass import AirSimClientDrone
+from env.DroneClass import AirSimClientDrone
 from distance import Distance
 
 if __name__ == "__main__":
