@@ -110,7 +110,7 @@ class Environment(object):
             rfov = 0
         if self.done and not collision and self.state[8] != -1 and self.state[6] <= 20/120:
             rf = 50
-        elif self.state[8] == -1:
+        elif self.state[8] == -1 or self.state[6] > 20/120:
             rf = -50
         else:
             rf = 0
@@ -155,7 +155,7 @@ class Environment(object):
             else:
                 r_ang -= (dist - 0.6) * 10
         reward = rc + rfov + rd + rf + rdir + robs + r_v + r_ang
-        print(f"rc={rc} , rfov={rfov} , rd={rd} , rdir = {rdir} , robs= {robs} , r_v={r_v} , r_ang= {r_ang}")
+        print(f"rc={rc} , rfov={rfov} , rd={rd} , rdir = {rdir} , robs= {robs} , r_v={r_v} , r_ang= {r_ang} , rf={rf} ")
         return reward, self.done
     
 
@@ -164,12 +164,11 @@ class Environment(object):
         quad_vel = self.drone.get_velocity()
         vp = np.sqrt(quad_vel.x_val**2 + quad_vel.y_val**2 + quad_vel.z_val**2)
         a_vp = (vp + quad_offset[0]) / vp
-        print("quad_offset = ",quad_offset)
-        print("a_vp = ",a_vp)
         new_x = np.cos(quad_offset[1] )* quad_vel.x_val - np.sin(quad_offset[1] )* quad_vel.y_val
         new_y = np.sin(quad_offset[1] ) * quad_vel.x_val+ np.cos(quad_offset[1] )* quad_vel.y_val
-        print("new_x = ",new_x)
-        print("new_y = ",new_y)
+        print("new_x = ",new_x * a_vp , " new_y = ",new_y * a_vp)
+        
+
         self.drone.move_by_velocity(
             new_x * a_vp,
             new_y * a_vp,

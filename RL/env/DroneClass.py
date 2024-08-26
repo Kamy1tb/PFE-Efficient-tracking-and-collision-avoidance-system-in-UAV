@@ -158,7 +158,7 @@ class AirSimClientDrone:
                 
     def detect_collision(self):
         collision_info = self.client.simGetCollisionInfo(self.drone_name)
-        if collision_info.has_collided and collision_info.object_id != -1:
+        if collision_info.has_collided and collision_info.object_id != -1 and collision_info.object_name != "beam_metal_window_divider_4x1129":
             print("Collision detected for drone %s" % self.drone_name)
             print(f"Nom de l'objet: {collision_info.object_name}")
             return True

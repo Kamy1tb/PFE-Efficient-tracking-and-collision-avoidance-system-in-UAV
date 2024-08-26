@@ -105,7 +105,7 @@ def main():
 
     agent = Agent("DQN")
     agent.configure(params=params)
-    agent.load_model("./output/models/best_model.pth")
+    #agent.load_model("./output/models/best_model.pth")
 
     scores = []
     best_score = -np.inf
