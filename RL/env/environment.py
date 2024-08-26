@@ -146,7 +146,7 @@ class Environment(object):
         else:
             robs = 0
         r_ang = 0
-        dist = np.linalg.norm([ self.state[8] - 0.5 , self.state[9] - 0.5) ])
+        dist = np.linalg.norm([ self.state[8] - 0.5 , self.state[9] - 0.5 ])
         if self.state[8] <0 :
             r_ang = 0
         else:
