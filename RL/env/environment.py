@@ -108,30 +108,27 @@ class Environment(object):
             rfov = -10
         else:
             rfov = 0
-        if self.done and not collision and self.state[8] != -1 and self.state[6] <= 25 and self.state[6] >= 15:
+        if self.done and not collision and self.state[8] != -1 and self.state[6] <= 20/120:
             rf = 50
         elif self.state[8] == -1:
             rf = -50
         else:
             rf = 0
-        if self.state[7] > 25 and self.state[6] > 25 :
+        
+        if self.state[7] > 0 and self.state[6] > 0 :
             r_track = self.state[7] - self.state[6]
-        elif self.state[7] > 25 and self.state[6] <= 25 and self.state[6] > 0:
-            r_track = self.state[7] - 25
-        elif self.state[7] <= 25 and self.state[6] > 25 and self.state[7] > 0:
-            r_track = 25 - self.state[6]
         else:
             r_track = 0
-        if 15 <= self.state[6] and self.state[6] <= 25:
-            r_zone = 5
-        elif self.state[6] < 15 : 
-            r_zone = -5
-        else : 
-            r_zone = 0
-        rd = (r_track + r_zone) * 0.05
+        if (self.state[6] >= 20/120) and self.state[6] >0 :
+            r_dis = -10            
+        elif self.state[6] > 0 :
+            r_dis = +5
+        else :
+            r_dis = 0
+        rd = (r_track + r_dis) * 0.2
         quad_vel = self.drone.get_velocity()
         vp = np.sqrt(quad_vel.x_val**2 + quad_vel.y_val**2 + quad_vel.z_val**2)
-        if vp < 0.5: 
+        if vp <= 0.5: 
             r_v = -0.2 * (0.5 - vp)
         else : 
             r_v = 0
@@ -148,8 +145,17 @@ class Environment(object):
             robs = -0.5
         else:
             robs = 0
-
-        reward = rc + rfov + rd + rf + rdir + robs + r_v
+        r_ang = 0
+        dist = np.linalg.norm([ self.state[8] - 0.5 , self.state[9] - 0.5) ])
+        if self.state[8] <0 :
+            r_ang = 0
+        else:
+            if dist <= 0.6 : 
+                r_ang += dist * 10
+            else:
+                r_ang -= (dist - 0.6) * 10
+        reward = rc + rfov + rd + rf + rdir + robs + r_v + r_ang
+        print(f"rc={rc} , rfov={rfov} , rd={rd} , rdir = {rdir} , robs= {robs} , r_v={r_v} , r_ang= {r_ang}")
         return reward, self.done
     
 
@@ -191,22 +197,21 @@ class Environment(object):
         return state, reward, done, info
 
     def generate_state(self):
-        
-        
+        self.distances = self.drone.get_distance_all()
         try:
             raw = self.drone.take_raw_photo("high_res")
             png,cylinders = self.drone.take_box_photo(["Drone2"],"high_res",raw)
             list,info = self.drone.box_info(cylinders,640,360)
             self.state = [
-            self.drone.get_position()[0],  # position xt
-            self.drone.get_position()[1],  # position yt
-            self.drone.get_position()[2],  # position zt
+            self.drone.get_position()[0] / 120,  # position xt
+            self.drone.get_position()[1] / 120,  # position yt
+            self.drone.get_position()[2] / 120,  # position zt
             self.state[0],  # position xt-1
             self.state[1],  # position yt-1
             self.state[2],  # position zt-1
-            self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640), # distance target
+            self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) / 120, # distance target
             self.state[6], # distance target t-1
-            info[0][0],info[0][1], #position target xt, yt
+            info[0][0] / 640 ,info[0][1] / 360 , #position target xt, yt
             self.state[8],  # position target xt-1
             self.state[9],  # position target yt-1
             self.state[10],  # position target xt-2
@@ -215,9 +220,9 @@ class Environment(object):
             
         except:
             self.state = [
-            self.drone.get_position()[0],  # position xt
-            self.drone.get_position()[1],  # position yt
-            self.drone.get_position()[2],  # position zt
+            self.drone.get_position()[0] / 120,  # position xt
+            self.drone.get_position()[1] / 120,  # position yt
+            self.drone.get_position()[2] / 120,  # position zt
             self.state[0],  # position xt-1
             self.state[1],  # position yt-1
             self.state[2],  # position zt-1
