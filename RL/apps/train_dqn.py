@@ -74,8 +74,8 @@ def main():
     project="dqdqdq/dqn",
     api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyZTYyMGQ3Ni1iMDAwLTQ3OGItOTBjZS1jYTY1MThkMWJmNjIifQ==",
     )
-    n_games = 10000        
-    eps_dec = 1./n_games                 
+    n_games = 1500        
+    eps_dec = 0.0017                
     environment = Environment()
 
     # Number of layers and activation functions.
