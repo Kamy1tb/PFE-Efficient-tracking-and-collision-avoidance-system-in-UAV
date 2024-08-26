@@ -19,6 +19,9 @@ from env.DroneClass import AirSimClientDrone
 from helpers.utils import *
 import threading
 import time
+import neptune
+
+
 
 velocity = 1  # Vitesse en m/s
 duration = 2  # Durée de chaque mouvement en secondes
@@ -67,7 +70,10 @@ def train_drone(agent,env,state,score):
     return ac
 
 def main():
-
+    run = neptune.init_run(
+    project="dqdqdq/dqn",
+    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyZTYyMGQ3Ni1iMDAwLTQ3OGItOTBjZS1jYTY1MThkMWJmNjIifQ==",
+    )
     n_games = 10000        
     eps_dec = 1./n_games                 
     environment = Environment()
@@ -132,8 +138,10 @@ def main():
         agent.update_learn_params()
         scores.append(score[0])
         with open("./output/log/scores", "a") as f:
-            f.write(f"{episode} , {score[0]} , {agent.epsilon}")
-        
+            f.write(f"{episode} , {score[0]} , {agent.epsilon} \n")
+        run["reward"].append(score[0])
+        run["epsilon"].append(agent.epsilon)
+
         if episode % 50 == 0:
             avg_score = np.mean(scores[-50:])
             if avg_score > best_score:
@@ -141,9 +149,9 @@ def main():
                 agent.save_model("./output/models/best_model2.pth")
         
     print("scores ",scores)
+    run.stop()
 
-
-    fname = 'DQN_' + 'Reward' +\
+    """ fname = 'DQN_' + 'Reward' +
         '_' + str(n_games) + 'games'
 
     figure_file  = './output/plots/'  + fname  + '.png'
@@ -153,7 +161,8 @@ def main():
     with open("./output/log/scores", "w") as f:
          f.write(str(scores))
 
-    plot_learning_curve(x, scores, figure_file)
+    plot_learning_curve(x, scores, figure_file)"""
+        
 
 if __name__ == '__main__':
     main()
