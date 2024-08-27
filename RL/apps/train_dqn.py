@@ -20,7 +20,7 @@ from helpers.utils import *
 import threading
 import time
 import neptune
-
+from dotenv import load_dotenv
 
 
 velocity = 1  # Vitesse en m/s
@@ -55,26 +55,27 @@ def control_drone_target(env, waypoints,duration):
         env.set_done()
         
 
-def train_drone(agent,env,state,score):
+def train_drone(agent,env,state,score,run):
     ac = 0
     while not env.is_done():
         action = agent.choose_action(state)
-        print("action ",action)
-        next_state, reward, env.done, info = env.step(action)
-        print("next state ",next_state)
-        agent.store_transition(state,action, next_state, reward, env.done)   
+        next_state, reward, done, info,s = env.step(action)
+        agent.store_transition(state,action, next_state, reward, done)   
         agent.step_learn() 
         state = next_state
         score[0] += reward
+        run["reward_per_step"].append(reward)
         ac +=1
-    return ac
+    run["n_actions"].append(ac)
+    run["success"].append(s)
 
 def main():
+    load_dotenv()
     run = neptune.init_run(
     project="dqdqdq/dqn",
-    api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiIyZTYyMGQ3Ni1iMDAwLTQ3OGItOTBjZS1jYTY1MThkMWJmNjIifQ==",
+    api_token=os.getenv('API_SECRET_KEY'),
     )
-    n_games = 1500        
+    n_games = 10        
     eps_dec = 0.0017                
     environment = Environment()
 
@@ -123,7 +124,7 @@ def main():
         print("before threads ",environment.done)
         # Create a new thread for drone control
         drone_thread = threading.Thread(target=control_drone_target, args=(environment, waypoints_track, duration))
-        train_thread = threading.Thread(target=train_drone, args=(agent,environment,state,score))  
+        train_thread = threading.Thread(target=train_drone, args=(agent,environment,state,score,run))  
         drone_thread.start()
         train_thread.start()
         drone_thread.join()

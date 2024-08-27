@@ -90,7 +90,7 @@ class Environment(object):
         self.drone.turn_on_api()
         self.drone_target.turn_on_api()
         
-
+        self.state= [0 for i in range(23)]
         self.generate_state()
         self.steps = 0
         self.nbCollision = 0
@@ -99,6 +99,7 @@ class Environment(object):
     
     def _compute_reward(self):
         collision = self.drone.detect_collision()
+        s = 0
         if collision:
             rc = -50
             self.done = 1
@@ -110,7 +111,8 @@ class Environment(object):
             rfov = 0
         if self.done and not collision and self.state[8] != -1 and self.state[6] <= 20/120:
             rf = 50
-        elif self.state[8] == -1 or self.state[6] > 20/120:
+            s = 1
+        elif self.done and not collision and (self.state[8] == -1 or self.state[6] > 20/120):
             rf = -50
         else:
             rf = 0
@@ -151,12 +153,12 @@ class Environment(object):
             r_ang = 0
         else:
             if dist <= 0.6 : 
-                r_ang += dist * 10
+                r_ang += (0.6-dist) * 5
             else:
-                r_ang -= (dist - 0.6) * 10
+                r_ang -= (dist - 0.6) * 5
         reward = rc + rfov + rd + rf + rdir + robs + r_v + r_ang
         print(f"rc={rc} , rfov={rfov} , rd={rd} , rdir = {rdir} , robs= {robs} , r_v={r_v} , r_ang= {r_ang} , rf={rf} ")
-        return reward, self.done
+        return reward, self.done,s
     
 
     def _do_action(self, action):
@@ -191,9 +193,9 @@ class Environment(object):
     def step(self, action_agent):
         state = self.generate_state()
         self._do_action(action_agent)
-        reward, done = self._compute_reward()
+        reward, done, success = self._compute_reward()
         info = []
-        return state, reward, done, info
+        return state, reward, done, info,success
 
     def generate_state(self):
         self.distances = self.drone.get_distance_all()
@@ -210,7 +212,7 @@ class Environment(object):
             self.state[2],  # position zt-1
             self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) / 120, # distance target
             self.state[6], # distance target t-1
-            info[0][0] / 640 ,info[0][1] / 360 , #position target xt, yt
+            (self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) < 20) * (info[0][0]) ,(self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) < 20) * info[0][1] , #position target xt, yt
             self.state[8],  # position target xt-1
             self.state[9],  # position target yt-1
             self.state[10],  # position target xt-2
@@ -234,7 +236,7 @@ class Environment(object):
             self.state[11],  # position target yt-2
         ] + self.distances
 
-            
+        print(self.state[6],self.state[8],self.state[9])            
         
 
         return self.state
