@@ -57,17 +57,20 @@ def control_drone_target(env, waypoints,duration):
 
 def train_drone(agent,env,state,score,run):
     ac = 0
-    while not env.is_done():
-        action = agent.choose_action(state)
-        next_state, reward, done, info,s = env.step(action)
+    while not env.done:
+        action, entropy = agent.choose_action(state)
+        next_state, reward, done, info = env.step(action)
         agent.store_transition(state,action, next_state, reward, done)   
         agent.step_learn() 
         state = next_state
         score[0] += reward
         run["reward_per_step"].append(reward)
+        run["entropy"].append(entropy)
         ac +=1
+        if env.arrived : 
+            env.done = 1
+    run["Success"].append(env.nbSuccess)
     run["n_actions"].append(ac)
-    run["success"].append(s)
 
 def main():
     load_dotenv()
@@ -88,7 +91,7 @@ def main():
     ]
 
     params = {
-            "lr": 1e-2,
+            "lr": 0.00025,
             "gamma": 0.9,
             "action_space": environment.get_actions(),
             "state_space": environment.get_states(),

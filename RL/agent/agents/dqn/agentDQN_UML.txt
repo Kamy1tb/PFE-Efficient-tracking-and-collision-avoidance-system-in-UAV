@@ -1,0 +1,40 @@
+@startuml
+class Agent {
+    configure()
+    step_learn()
+    episode_learn()
+    _do_network_update()
+    update_learn_params()
+    choose_action()
+    update_target_network()
+    store_transition()
+    save_output()
+    save_model()
+    load_model()
+    eval()
+        number_episodes
+    eval_mode
+    number_episodes
+    lr
+    epsilon
+    eps_start
+    eps_end
+    eps_dec
+    action_space
+    state_space_dim
+    n_actions
+    hidden_size
+    replay_buffer_size
+    batch_size
+    target_update
+    gamma
+    network_spec
+    memory
+    policy_net
+    target_net
+    epsilon
+    eval_mode
+    __init__()
+}
+RLAgent <|-- Agent
+@enduml

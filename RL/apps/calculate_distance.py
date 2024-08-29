@@ -6,7 +6,7 @@ BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_PATH)
 sys.path.append(Path(BASE_PATH).parent)
 import env.setup_path
-from env.airsim.types import Vector3r
+from env.airsim.types import Vector3r, DrivetrainType, YawMode
 
 import env.airsim
 import numpy as np
@@ -25,6 +25,14 @@ if __name__ == "__main__":
     
     print(position) 
     drone2 = AirSimClientDrone("Drone2")
+    drone.takeoff(-4,True)
+   # drone2.takeoff(-4,True)
+    
+    drone.client.rotateToYawAsync(0,0.7,vehicle_name="Drone1").join()
+    drone.client.rotateToYawAsync(90,1,vehicle_name="Drone1").join()
+    drone.client.rotateByYawRateAsync(-90,2,vehicle_name="Drone1").join()
+
+    #drone2.client.moveByVelocityZAsync(3,3,-4,2,DrivetrainType.ForwardOnly)
     position2 = drone2.get_gps_position()
     print(position2)
     lat1, lon1, alt1, lat2, lon2, alt2 = position.latitude, position.longitude, position.altitude, position2.latitude, position2.longitude, position2.altitude

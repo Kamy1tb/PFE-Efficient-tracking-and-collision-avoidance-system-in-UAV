@@ -5,6 +5,7 @@ import pprint
 import os
 import math
 from env.model import YOLOModel
+from env.airsim.types import Vector3r, DrivetrainType, YawMode
 import time 
 import numpy as np
 
@@ -25,6 +26,7 @@ class AirSimClientDrone:
         self.client.armDisarm(True, drone_name)
         self.initial_position = self.client.getMultirotorState(self.drone_name).kinematics_estimated.position
         print(f"{self.drone_name} is set !")
+
     def return_client(self):
         return self.client
     
@@ -112,12 +114,13 @@ class AirSimClientDrone:
             self.client.moveToPositionAsync(x, y, z,speed,vehicle_name=self.drone_name)
         print(f"{self.drone_name} moved to {x}, {y}, {z}")
 
-    def move_by_velocity(self,vx,vy,vz,time,join=False):
+    def move_by_velocity(self,vx,vy,z,time,join=False):
         if join:
-            self.client.moveByVelocityAsync(vx,vy,vz,time,vehicle_name=self.drone_name).join()
+            self.client.moveByVelocityZAsync(vx,vy,z,time,DrivetrainType.ForwardOnly,yaw_mode= YawMode(is_rate=False),vehicle_name=self.drone_name).join()
         else:
-            self.client.moveByVelocityAsync(vx,vy,vz,time,vehicle_name=self.drone_name)
-        print(f"{self.drone_name} moved with speed vector [{vx}, {vy}, {vz}] with duration {time}")
+            self.client.moveByVelocityZAsync(vx,vy,z,time,DrivetrainType.ForwardOnly,yaw_mode= YawMode(is_rate=False),vehicle_name=self.drone_name)
+        print(f"{self.drone_name} moved with speed vector [{vx}, {vy}, {z}] with duration {time}")
+    
 
     def rotate(self, yaw,rotation_duration):
         self.client.rotateByYawRateAsync(yaw, rotation_duration,vehicle_name=self.drone_name).join()
@@ -244,6 +247,7 @@ class AirSimClientDrone:
             predict = model.predict(photo)
             print(predict)
             print(f"Time taken: {time.time()-start_time}")
+            return predict
 
     def turn_on_api(self):
         self.client.enableApiControl(True, self.drone_name)

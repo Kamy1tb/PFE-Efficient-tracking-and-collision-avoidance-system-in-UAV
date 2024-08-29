@@ -1,0 +1,37 @@
+@startuml
+class AirSimClientDrone {
+    return_client()
+    takeoff()
+    get_position()
+    get_velocity()
+    take_raw_photo()
+    get_gps_position()
+    take_depth_photo()
+    take_box_photo()
+    save_photo()
+    move()
+    move_by_velocity()
+    rotate()
+    land()
+    do_random_path()
+    box_info()
+    save_box_info()
+    detect_collision()
+    action_collision()
+    _calculate_distance()
+    set_camerapose()
+    get_distance()
+    get_estimated_distance()
+    near_collision()
+    get_distance_all()
+    get_lidar()
+    parse_lidarData()
+    predict_yolo()
+    turn_on_api()
+    turn_off_api()
+        drone_name
+    client
+    initial_position
+    __init__()
+}
+@enduml

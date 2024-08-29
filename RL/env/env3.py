@@ -13,7 +13,7 @@ __version__ = '1.0'
 __authors__ = 'Sihem Ouahouah & Miloud Bagaa'
 __author_emails__ = 'sihem.ouahouah@aalto.fi & miloud.bagaa@aalto.fi'
 
-class Environment1(object):
+class Environment2(object):
     def __init__(self, drone_name="Drone1",drone_target="Drone2", step_length=10, areaSideSize=None, observableAccessPoints=None, observableEvents=None):
         self.drone_name = drone_name
         self.drone_target = AirSimClientDrone(drone_target)
@@ -29,7 +29,7 @@ class Environment1(object):
         self.done = 0 
         self.lock = threading.Lock()
         # Define discrete action space
-        self.action_space = spaces.Discrete(11)
+        self.action_space = spaces.Discrete(21)
         self.step_length = 3
         # Initialize environment properties
         self.areaSideSize = areaSideSize
@@ -78,15 +78,21 @@ class Environment1(object):
         return self.state
 
     def _compute_reward(self):
+        collision = self.drone.detect_collision()
+        rc = 0
+        if collision:
+            self.done = 1
+            self.nbCollision += 1
+            return -1000, self.done
         r_ang = 0
         dist = np.linalg.norm([ self.state[6] - 0.5 , self.state[7] - 0.5 ]) #distance from center
         if self.state[6] <0 :
             r_ang = -2
         else:
             r_ang = -dist   # 0 - 1
-        
+
         rd = 0
-        if self.state[6] >0 : 
+        if self.state[6] >0 :  #target in FOV
             if self.state[4] < 2/120 : 
                 rd = -2
             elif self.state[4] > 7/120 :    
@@ -106,27 +112,30 @@ class Environment1(object):
     def _do_action(self, action):
         speed = self.interpret_action(action)
         rotation = self.prev_angle 
-        print(rotation)
-        val_x = speed[0] * np.cos(rotation) - speed[1] * np.sin(rotation)
-        val_y = speed[0] * np.sin(rotation) + speed[1] * np.cos(rotation)
-        if val_x > 5 :
-            val_x = 5
-        if val_y > 5 : 
-            val_y = 5
-        if val_x < -5 :
-            val_x = -5
-        if val_y < -5 : 
-            val_y = -5
+        if len(speed) == 4 :
+            self.prev_angle += speed[2] / 180 * np.pi
+            self.drone.rotate(speed[2], 0.1)
+            
+        else:
+            val_x = speed[0] * np.cos(rotation) - speed[1] * np.sin(rotation)
+            val_y = speed[0] * np.sin(rotation) + speed[1] * np.cos(rotation)
+            if val_x > 5 :
+                val_x = 5
+            if val_y > 5 : 
+                val_y = 5
+            if val_x < -5 :
+                val_x = -5
+            if val_y < -5 : 
+                val_y = -5
 
-        self.prev_angle += speed[2]
-        self.drone.move_by_velocity(
-            val_x,
-            val_y,
-            -4,
-            1.5,
-            True
-        ) 
-        
+            self.prev_angle += speed[2]
+            self.drone.move_by_velocity(
+                val_x,
+                val_y,
+                -4,
+                1.5,
+                True
+            )
 
     def interpret_action(self, action):
         if action == 0:
@@ -149,6 +158,26 @@ class Environment1(object):
             quad_offset = (0, -self.step_length *2, -np.pi/2) #accelerate left
         elif action == 9:
             quad_offset = (self.step_length *2, -self.step_length *2, -np.pi/4) #accelerate -45 degrees
+        elif action == 10:
+            quad_offset = (self.step_length, self.step_length, np.pi/6) #30 degrees
+        elif action == 11:
+            quad_offset = (self.step_length, -self.step_length, -np.pi/6) #-30 degrees
+        elif action == 12:
+            quad_offset = (self.step_length, self.step_length, np.pi/3) #60 degrees
+        elif action == 13:
+            quad_offset = (self.step_length, -self.step_length, -np.pi/3) #-60 degrees
+        elif action == 14:
+            quad_offset = (self.step_length * 2, self.step_length * 2, np.pi/6) #accelerate 30 degrees
+        elif action == 15:
+            quad_offset = (self.step_length * 2, -self.step_length * 2, -np.pi/6) #accelerate -30 degrees
+        elif action == 16:
+            quad_offset = (self.step_length * 2, self.step_length * 2, np.pi/3) #accelerate 60 degrees
+        elif action == 17:
+            quad_offset = (self.step_length * 2, -self.step_length * 2, -np.pi/3) #accelerate 30 degrees
+        elif action == 18:
+            quad_offset = (0,0,100, True) #Rotation right
+        elif action == 19:
+            quad_offset = (0,0,-100, True) #Rotation left
         else:
             quad_offset = (0, 0, 0) #stop
 

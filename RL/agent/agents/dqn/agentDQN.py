@@ -99,17 +99,25 @@ class Agent(RLAgent):
             with T.no_grad():
                 state = T.tensor(state, dtype=T.float).to(self.policy_net.device)
                 q_values = self.policy_net(state)
+                softmax_q_values = F.softmax(q_values, dim=0)
+                entropy = -T.sum(softmax_q_values * T.log(softmax_q_values))
                 action = T.argmax(q_values).item()
                 #print("action = {}".format(action))
-                return action
+                return action, entropy.item()
 
         if np.random.random() < self.epsilon:
-            return np.random.choice(self.action_space.n)
+            state = T.tensor(state, dtype=T.float).to(self.policy_net.device)
+            q_values = self.policy_net(state)
+            softmax_q_values = F.softmax(q_values, dim=0)
+            entropy = -T.sum(softmax_q_values * T.log(softmax_q_values))
+            return np.random.choice(self.action_space.n) , entropy.item()
         else:
             with T.no_grad():
                 state = T.tensor(state, dtype=T.float).to(self.policy_net.device)
                 q_values = self.policy_net(state)
-                return T.argmax(q_values).item()
+                softmax_q_values = F.softmax(q_values, dim=0)
+                entropy = -T.sum(softmax_q_values * T.log(softmax_q_values))
+                return T.argmax(q_values).item() , entropy.item()
 
     def update_target_network(self):
         self.target_net.load_state_dict(self.policy_net.state_dict())

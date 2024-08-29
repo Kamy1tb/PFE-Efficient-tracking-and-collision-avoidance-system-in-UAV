@@ -1,7 +1,7 @@
 import sys, os
 # Add the 'env' directory to the Python path
 from unipath import Path
-
+from gym import spaces
 BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))   
 sys.path.append(BASE_PATH)
 sys.path.append(Path(BASE_PATH).parent)
@@ -9,6 +9,7 @@ from env.environment import Environment
 from env.DroneClass import AirSimClientDrone
 import threading
 import numpy as np
+from env.airsim.types import Vector3r, DrivetrainType, YawMode
 import time
 def control_drone(client, waypoints,duration):
             
@@ -49,71 +50,84 @@ def do_action(drone, action):
         ) 
         drone.move_by_velocity(0, 0, 0, 0.5,True)
 
+
+
+def interpret_action( action,prev_angle):
+
+        if action == 0:
+            quad_offset = (3, 0, 0) #forward
+        elif action == 1:
+            quad_offset = (0, 3, np.pi/2) #right
+        elif action == 2:
+            quad_offset = (3, 3, np.pi/4) # 45 degrees
+        elif action == 3:
+            quad_offset = (0, -3, -np.pi/2) #left
+        elif action == 4:
+            quad_offset = (3, -3, -np.pi/4) #-45 degrees
+        elif action == 5:
+            quad_offset = (3 * 2, 0, 0) #accelerate forward
+        elif action == 6:
+            quad_offset = (0, 3 *2, np.pi/2) #accelerate right
+        elif action == 7:
+            quad_offset = (3 * 2, 3 * 2, np.pi/4) #accelerate 45 degrees
+        elif action == 8:
+            quad_offset = (0, -3 *2, -np.pi/2) #accelerate left
+        elif action == 9:
+            quad_offset = (3 *2, -3 *2, -np.pi/4) #accelerate -45 degrees
+        else:
+            quad_offset = (0, 0, prev_angle) #stop
+
+        return quad_offset
+
+
+
+
+
+
 if __name__ == "__main__":
-    env = Environment("Drone1","Drone2",10)
-    drone1 = env.drone
-    drone2 = env.drone_target
-    pos = drone2.get_position()
-    velocity = 1  # Vitesse en m/s
-    duration = 2  # Durée de chaque mouvement en secondes
-    waypoint_distance = 4  # Distance entre chaque waypoint en mètres
-    threads = []
+    drone = AirSimClientDrone("Drone1")
+    drone.takeoff(-4,True)
 
-    # Waypoints : ici, nous simulerons des arbres à des positions spécifiques
-    waypoints_track = [
-    (waypoint_distance, 0, 0),  # Premier waypoint (droit)
-    (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (waypoint_distance, 0, 0),  # Troisième waypoint (droit)
-    (waypoint_distance, 0, 0),  # Troisième waypoint (droit)
-    (waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (waypoint_distance, 0, 0),  # cinquième waypoint (droit)
-    (waypoint_distance, 0, 0),  # cinquième waypoint (droit)
-    (waypoint_distance, 0, 0),  # cinquième waypoint (droit)
-    (waypoint_distance, 0, 0),  # cinquième waypoint (droit)
-    (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (waypoint_distance, 0, 0),  # Troisième waypoint (droit)
-    (waypoint_distance, 0, 0),  # Troisième waypoint (droit)
-    (waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (waypoint_distance, 0, 0),  # cinquième waypoint (droit)
+    actions = spaces.Discrete(11)
+    prev_angle = 0
+    action = 1
+    speed = interpret_action(action, prev_angle)
 
-    
+    rotation = prev_angle 
+    val_x = speed[0] * np.cos(rotation) - speed[1] * np.sin(rotation)
+    val_y = speed[0] * np.sin(rotation) + speed[1] * np.cos(rotation)
+    if val_x > 6 :
+        val_x = 6
+    if val_y > 6 : 
+        val_y = 6
+    if val_x < -6 :
+        val_x = -6
+    if val_y < -6 : 
+        val_y = -6
+    print(f"The speed vector from action = {speed}")
+    print(f"Vx = {val_x} ,Vy = {val_y}")
 
-    ]
+    prev_angle += speed[2]
+    drone.client.moveByVelocityZAsync(val_x,val_y,-4,2,DrivetrainType.ForwardOnly,yaw_mode= YawMode(is_rate=False)).join()
 
-    waypoints2 = [
-    (waypoint_distance, 0, 0),  # Premier waypoint (droit)
-    (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
-    (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (7 * waypoint_distance, 0, 0),  # cinquième waypoint (droit)
-    (waypoint_distance, 2, 0),  # Deuxième waypoint (esquive à gauche)
-    (2 * waypoint_distance, 2, 0),  # Troisième waypoint (droit)
-    (2 * waypoint_distance, -4, 0),  # Quatrième waypoint (esquive à droite)
-    (7 * waypoint_distance, 0, 0)  # cinquième waypoint (droit)
+    action = 0
+    speed = interpret_action(action, prev_angle)
 
+    rotation = prev_angle 
+    val_x = speed[0] * np.cos(rotation) - speed[1] * np.sin(rotation)
+    val_y = speed[0] * np.sin(rotation) + speed[1] * np.cos(rotation)
+    if val_x > 6 :
+        val_x = 6
+    if val_y > 6 : 
+        val_y = 6
+    if val_x < -6 :
+        val_x = -6
+    if val_y < -6 : 
+        val_y = -6
+    print(f"The speed vector from action = {speed}")
+    print(f"Vx = {val_x} ,Vy = {val_y}")
 
-    ]
-    drone1.takeoff(-3,True)
-        
-    while True:
-        print("initial position : ",drone1.get_position())
-        #ac = np.random.randint(0,4)
-        #do_action(drone1,ac)
-        # Création et démarrage des threads
-        thread1 = threading.Thread(target=control_drone, args=(drone1, waypoints_track,duration))
-        #thread2 = threading.Thread(target=control_drone, args=(drone2, waypoints2, duration))
-        thread1.start()
-        #thread2.start()
+    prev_angle += speed[2]
+    drone.client.moveByVelocityZAsync(val_x,val_y,-4,2,DrivetrainType.ForwardOnly,yaw_mode= YawMode(is_rate=False)).join()
 
-        # Attendre la fin des threads
-        thread1.join()
-        #thread2.join()
-          
-        env.reset()
-        #drone2.client.enableApiControl(True)
-        #drone2.client.armDisarm(True)
-    #drone1 = AirSimClientDrone("Drone1")
-
-    #print(drone1.get_position())
+    #insert move method here
