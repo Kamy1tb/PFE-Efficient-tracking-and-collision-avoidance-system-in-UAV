@@ -85,7 +85,7 @@ class Environment2(object):
         if collision:
             self.done = 1
             self.nbCollision += 1
-            return -60 * (1 + 0.1 * self.nbCollision // 50), self.done
+            return -60 * (1 + 0.1 * (self.nbCollision // 50)), self.done
         elif self.state[6]>0:
             r_ang = 0
             dist = np.linalg.norm([ self.state[6] - 0.5 , self.state[7] - 0.5 ]) #distance from center 
