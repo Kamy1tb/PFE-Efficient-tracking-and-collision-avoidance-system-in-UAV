@@ -29,7 +29,7 @@ class Environment2(object):
         self.done = 0 
         self.lock = threading.Lock()
         # Define discrete action space
-        self.action_space = spaces.Discrete(21)
+        self.action_space = spaces.Discrete(19)
         self.step_length = 3
         # Initialize environment properties
         self.areaSideSize = areaSideSize
@@ -72,70 +72,74 @@ class Environment2(object):
         
         self.state= [0 for i in range(23)]
         self.generate_state()
-        self.steps = 0
-        self.nbCollision = 0
-          
+        self.steps = 0  
+        self.prev_angle = 0
+        
         return self.state
 
     def _compute_reward(self):
+        rd = 0
+        r_fov=0
+        r_ang = 0
         collision = self.drone.detect_collision()
-        rc = 0
         if collision:
             self.done = 1
             self.nbCollision += 1
-            return -1000, self.done
-        r_ang = 0
-        dist = np.linalg.norm([ self.state[6] - 0.5 , self.state[7] - 0.5 ]) #distance from center
-        if self.state[6] <0 :
-            r_ang = -2
+            return -60 * (1 + 0.1 * self.nbCollision // 50), self.done
+        elif self.state[6]>0:
+            r_ang = 0
+            dist = np.linalg.norm([ self.state[6] - 0.5 , self.state[7] - 0.5 ]) #distance from center 
+            if dist < 0.3 : 
+                r_ang = +3+ (1-dist)
+            elif dist < 0.8:
+                r_ang = +2+ (1-dist)
+            else:
+                r_ang = 1
+            if self.state[4] < 2/90 : 
+                rd = -1
+            elif self.state[4] > 12/90:
+                rd = - self.state[4] * 3
+            else:
+                rd = 2 + (12/90 - self.state[4]) *3
         else:
-            r_ang = -dist   # 0 - 1
-
-        rd = 0
-        if self.state[6] >0 :  #target in FOV
-            if self.state[4] < 2/120 : 
-                rd = -2
-            elif self.state[4] > 7/120 :    
-                rd = -self.state[4] # 0 - 1
-            else : 
-                rd = 2
+            r_fov = -3
+        r_obs =  min(min(self.state[14:]) - 5 , 0)
+        r_direction = 0
+        if self.prev_angle > np.pi/2 or self.prev_angle<-np.pi/2:
+            r_direction = -3
+        
         if self.arrived : 
             self.done = 1
-        if self.done and self.state[6] != -1 and self.state[4] > 0  and self.state[4] < 15/120:
+        if self.done and self.state[6] != -1 and self.state[4] > 0  and self.state[4] < 15/90:
             self.nbSuccess += 1
 
-        print(f"r_center = {r_ang} , rd = {rd}")
-        return rd + r_ang , self.done
+        print(f"r_center = {r_ang} , rd = {rd}, rfob = {r_fov}, r_obs = {r_obs}, r_direction = {r_direction}")
+        return  rd + r_fov + r_ang + r_direction + r_obs , self.done
                 
     
 
     def _do_action(self, action):
         speed = self.interpret_action(action)
         rotation = self.prev_angle 
-        if len(speed) == 4 :
-            self.prev_angle += speed[2] / 180 * np.pi
-            self.drone.rotate(speed[2], 0.1)
-            
-        else:
-            val_x = speed[0] * np.cos(rotation) - speed[1] * np.sin(rotation)
-            val_y = speed[0] * np.sin(rotation) + speed[1] * np.cos(rotation)
-            if val_x > 5 :
-                val_x = 5
-            if val_y > 5 : 
-                val_y = 5
-            if val_x < -5 :
-                val_x = -5
-            if val_y < -5 : 
-                val_y = -5
+        val_x = speed[0] * np.cos(rotation) - speed[1] * np.sin(rotation)
+        val_y = speed[0] * np.sin(rotation) + speed[1] * np.cos(rotation)
+        if val_x > 4 :
+            val_x = 4
+        if val_y > 4 : 
+            val_y = 4
+        if val_x < -4 :
+            val_x = -4
+        if val_y < -4 : 
+            val_y = -4
 
-            self.prev_angle += speed[2]
-            self.drone.move_by_velocity(
-                val_x,
-                val_y,
-                -4,
-                1.5,
-                True
-            )
+        self.prev_angle += speed[2]
+        self.drone.move_by_velocity(
+            val_x,
+            val_y,
+            -4,
+            1,
+            True
+        )
 
     def interpret_action(self, action):
         if action == 0:
@@ -159,25 +163,21 @@ class Environment2(object):
         elif action == 9:
             quad_offset = (self.step_length *2, -self.step_length *2, -np.pi/4) #accelerate -45 degrees
         elif action == 10:
-            quad_offset = (self.step_length, self.step_length, np.pi/6) #30 degrees
+            quad_offset = (self.step_length * np.cos(22.5 * np.pi / 180), self.step_length * np.sin(22.5 * np.pi / 180), 22.5 * np.pi/180) #30 degrees
         elif action == 11:
-            quad_offset = (self.step_length, -self.step_length, -np.pi/6) #-30 degrees
+            quad_offset = (self.step_length * np.cos(22.5 * np.pi / 180), -self.step_length * np.sin(22.5 * np.pi / 180), -22.5 * np.pi/180) #-30 degrees
         elif action == 12:
-            quad_offset = (self.step_length, self.step_length, np.pi/3) #60 degrees
+            quad_offset = (self.step_length *np.cos(67.5 * np.pi / 180), self.step_length * np.sin(67.5 * np.pi / 180), 67.5 * np.pi/180) #60 degrees
         elif action == 13:
-            quad_offset = (self.step_length, -self.step_length, -np.pi/3) #-60 degrees
+            quad_offset = (self.step_length *np.cos(67.5 * np.pi / 180), -self.step_length * np.sin(67.5 * np.pi / 180), -67.5 * np.pi/180) #-60 degrees
         elif action == 14:
-            quad_offset = (self.step_length * 2, self.step_length * 2, np.pi/6) #accelerate 30 degrees
+            quad_offset = (self.step_length * 2 *  np.cos(22.5 * np.pi / 180), self.step_length * 2 * np.sin(22.5 * np.pi / 180), 22.5 * np.pi/180) #accelerate 30 degrees
         elif action == 15:
-            quad_offset = (self.step_length * 2, -self.step_length * 2, -np.pi/6) #accelerate -30 degrees
+            quad_offset = (self.step_length * 2 * np.cos(22.5 * np.pi / 180), -self.step_length * 2 * np.sin(22.5 * np.pi / 180), -22.5 * np.pi/180) #accelerate -30 degrees
         elif action == 16:
-            quad_offset = (self.step_length * 2, self.step_length * 2, np.pi/3) #accelerate 60 degrees
+            quad_offset = (self.step_length * 2 * np.cos(67.5 * np.pi / 180), self.step_length * 2 * np.sin(67.5 * np.pi / 180), 67.5 *np.pi/180) #accelerate 60 degrees
         elif action == 17:
-            quad_offset = (self.step_length * 2, -self.step_length * 2, -np.pi/3) #accelerate 30 degrees
-        elif action == 18:
-            quad_offset = (0,0,100, True) #Rotation right
-        elif action == 19:
-            quad_offset = (0,0,-100, True) #Rotation left
+            quad_offset = (self.step_length * 2 * np.cos(67.5 * np.pi / 180), -self.step_length * 2 * np.sin(67.5 * np.pi / 180), - 67.5 *np.pi/180) #accelerate 30 degrees
         else:
             quad_offset = (0, 0, 0) #stop
 
@@ -199,11 +199,11 @@ class Environment2(object):
             _ , info = self.drone.box_info(cylinders,640,360)
             if (self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) <= 35):
                 self.state = [
-            self.drone.get_position()[0] / 120,  # position xt                                                       0
-            self.drone.get_position()[1] / 120 ,  # position yt                                                      1
+            self.drone.get_position()[0] / 90,  # position xt                                                       0
+            self.drone.get_position()[1] / 90 ,  # position yt                                                      1
             self.state[0],  # position xt-1                                                                          2
             self.state[1],  # position yt-1                                                                          3
-            self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) / 120, # distance target           4
+            self.drone.get_estimated_distance(1,info[0][2],336.3610833984375,640) / 90, # distance target           4
             self.state[4], # distance target t-1                                                                     5
             info[0][0] ,#position target xt                                                                          6
             info[0][1] , #position target yt                                                                         7
@@ -216,8 +216,8 @@ class Environment2(object):
         ] + self.distances
             else : 
                 self.state = [
-            self.drone.get_position()[0] / 120,  # position xt                                                       0
-            self.drone.get_position()[1] / 120 ,  # position yt                                                      1
+            self.drone.get_position()[0] / 90,  # position xt                                                       0
+            self.drone.get_position()[1] / 90 ,  # position yt                                                      1
             self.state[0],  # position xt-1                                                                          2
             self.state[1],  # position yt-1                                                                          3
             -1, # distance target                                                                                    4
@@ -235,8 +235,8 @@ class Environment2(object):
             
         except:
             self.state = [
-            self.drone.get_position()[0] / 120,  # position xt                                                       0
-            self.drone.get_position()[1] / 120 ,  # position yt                                                      1
+            self.drone.get_position()[0] / 90,  # position xt                                                       0
+            self.drone.get_position()[1] / 90 ,  # position yt                                                      1
             self.state[0],  # position xt-1                                                                          2
             self.state[1],  # position yt-1                                                                          3
             -1, # distance target                                                                                    4

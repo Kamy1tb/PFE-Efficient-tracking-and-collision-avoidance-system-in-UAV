@@ -110,6 +110,7 @@ class Agent(RLAgent):
             q_values = self.policy_net(state)
             softmax_q_values = F.softmax(q_values, dim=0)
             entropy = -T.sum(softmax_q_values * T.log(softmax_q_values))
+            print("exploration")
             return np.random.choice(self.action_space.n) , entropy.item()
         else:
             with T.no_grad():
@@ -117,6 +118,7 @@ class Agent(RLAgent):
                 q_values = self.policy_net(state)
                 softmax_q_values = F.softmax(q_values, dim=0)
                 entropy = -T.sum(softmax_q_values * T.log(softmax_q_values))
+                print("exploitation")
                 return T.argmax(q_values).item() , entropy.item()
 
     def update_target_network(self):

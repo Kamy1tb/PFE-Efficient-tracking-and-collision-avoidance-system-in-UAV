@@ -72,7 +72,7 @@ def control_drone_target(env,duration,waypoints):
          
 
 def train_drone(agent,env,state,score,run):
-    ac = 0
+    ac = 1
     while not env.done:
         action, entropy = agent.choose_action(state)
         next_state, reward, done, info = env.step(action)
@@ -80,6 +80,7 @@ def train_drone(agent,env,state,score,run):
         agent.step_learn() 
         state = next_state
         score[0] += reward
+        print("action ",action)
         run["reward_per_step"].append(reward)
         run["entropy"].append(entropy)
         ac +=1
@@ -93,28 +94,27 @@ def train_drone(agent,env,state,score,run):
 
 def main():
     load_dotenv()
-    print(os.getenv('API_SECRET_KEY'))
     run = neptune.init_run(
     project="dqdqdq/dqn",
     api_token= os.getenv('API_SECRET_KEY'),
     )
     n_games = 3000       
-    eps_dec = 0.0023                
+    eps_dec = 0.005                
     environment = Environment2()
 
     # Number of layers and activation functions.
     network_spec = [
-        dict(type='dense', size=1024, activation='relu'),  # 256         
-        dict(type='dense', size=1024, activation='relu'),  # 128
-        dict(type='dense', size=1024, activation='relu'),
+        dict(type='dense', size=512, activation='relu'),  # 256         
+        dict(type='dense', size=512, activation='relu'),  # 128
+        dict(type='dense', size=128, activation='relu'),  # 128
     ]
 
     params = {
-            "lr": 0.00025,
+            "lr": 0.001,
             "gamma": 0.9,
             "action_space": environment.get_actions(),
             "state_space": environment.get_states(),
-            "eps_start": 1.0,
+            "eps_start": 1,
             "eps_end": 0.01,
             "eps_dec": eps_dec,
             "replay_buffer_size": 50000,
@@ -128,7 +128,7 @@ def main():
 
     agent = Agent("DQN")
     agent.configure(params=params)
-    #agent.load_model("./output/models/best_model6.pth")
+    #agent.load_model("./output/models/best_model_last.pth")
 
     scores = []
     best_score = -np.inf
@@ -140,10 +140,10 @@ def main():
         state = environment.reset()
         environment.drone.takeoff(-4, True)
         environment.drone_target.takeoff(-4, True)
-
-        environment.drone.move_by_velocity(1, 0, -4, 2, True)
+        state = environment.generate_state()
         
         score = [0]
+        
         print("before threads ",environment.done)
         # Create a new thread for drone control
         drone_thread = threading.Thread(target=control_drone_target, args=(environment,duration,waypoints_track))
@@ -170,7 +170,8 @@ def main():
             avg_score = np.mean(scores[-50:])
             if avg_score > best_score:
                 best_score = avg_score
-                agent.save_model("./output/models/best_model7.pth")
+                agent.save_model(f"./output/models/best_model{episode}_2.pth")
+        agent.save_model("./output/models/best_model_last2.pth")
         
     print("scores ",scores)
     run.stop()

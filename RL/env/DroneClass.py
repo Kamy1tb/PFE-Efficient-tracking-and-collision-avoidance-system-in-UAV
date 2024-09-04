@@ -96,7 +96,6 @@ class AirSimClientDrone:
         print("Found %d cylinders in image" % len(cylinders))
         for cylinder in cylinders:
                 s = pprint.pformat(cylinder)
-                #print("test: %s" % s)
                 cv2.rectangle(png,(int(cylinder.box2D.min.x_val),int(cylinder.box2D.min.y_val)),(int(cylinder.box2D.max.x_val),int(cylinder.box2D.max.y_val)),(255,0,0),2)
                 cv2.putText( png, cylinder.name, (int(cylinder.box2D.min.x_val),int(cylinder.box2D.min.y_val - 10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (36,255,12))
         return png, cylinders
@@ -151,9 +150,27 @@ class AirSimClientDrone:
             info.append([center_x,center_y,width,height])
             return liste,info
         
-
+    def box_info_2(self,cylinders,width_photo,height_photo):
+        info = []
+        for cylinder in cylinders :
+            center_x = (cylinder.box2D.max.x_val+cylinder.box2D.min.x_val)/2 * (1/width_photo)
+            center_y = (cylinder.box2D.max.y_val+cylinder.box2D.min.y_val)/2 * (1/height_photo)
+            width = (cylinder.box2D.max.x_val-cylinder.box2D.min.x_val) * (1/width_photo)
+            height = (cylinder.box2D.max.y_val-cylinder.box2D.min.y_val) * (1/height_photo)
+            class_label = cylinder.name
+            info.append([center_x,center_y,width,height])
+        return info
+    
+    def save_box_info_2(self,info,folder,filename):
+            liste = []
+            liste.append(f"{info[0]} {info[1]} {info[2]} {info[3]} {info[4]}")
+            filepath = os.path.join(folder, f"train_{filename}.txt")
+            with open(filepath, 'w') as file:
+                for line in liste:
+                    file.write(line+"\n")
 
     def save_box_info(self,liste,folder,filename):
+
         filepath = os.path.join(folder, f"train_{filename}.txt")
         with open(filepath, 'w') as file:
             for line in liste:
@@ -161,7 +178,7 @@ class AirSimClientDrone:
                 
     def detect_collision(self):
         collision_info = self.client.simGetCollisionInfo(self.drone_name)
-        if collision_info.has_collided and collision_info.object_id != -1 and collision_info.object_name != "beam_metal_window_divider_4x1129":
+        if collision_info.has_collided and collision_info.object_id != -1 and collision_info.object_name != "beam_metal_window_divider_4x1129" and collision_info.object_name != "Floor136":
             print("Collision detected for drone %s" % self.drone_name)
             print(f"Nom de l'objet: {collision_info.object_name}")
             return True

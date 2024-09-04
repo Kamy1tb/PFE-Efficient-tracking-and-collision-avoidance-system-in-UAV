@@ -75,33 +75,87 @@ class AirSimClientDrone:
             file.write(f"{class_label} {center_x} {center_y} {width} {height}")
 
 
+duration = 2  # Durée de chaque mouvement en secondes
+velocity_waypoint = 3  # Distance entre chaque waypoint en mètres
+
+waypoints_track = [
+    (velocity_waypoint, 0, 0),  # Premier waypoint (droit)
+    (velocity_waypoint, 2, 0),  # Deuxième waypoint (esquive à gauche)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 2, 0),  # Deuxième waypoint (esquive à gauche)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+
+    
+
+    ]
+
+
+
+waypoints_target = [
+    (velocity_waypoint, 0, 0),  # Premier waypoint (droit)
+    (velocity_waypoint, 2, 0),  # Deuxième waypoint (esquive à gauche)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+    (velocity_waypoint, 2, 0),  # Deuxième waypoint (esquive à gauche)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, 0, 0),  # Troisième waypoint (droit)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, -4, 0),  # Quatrième waypoint (esquive à droite)
+    (velocity_waypoint, 0, 0),  # cinquième waypoint (droit)
+
+    
+
+    ]
+velocity_track = 1
+velocity_target = 1
+
+
 if __name__ == "__main__":
-    path_raw =  r"C:\Users\tkamy\Documents\Unreal Projects\Airsim_Taibi\PythonClient\multirotor\training_data\raw"
-    path_labels = r"C:\Users\tkamy\Documents\Unreal Projects\Airsim_Taibi\PythonClient\multirotor\training_data\labels"
-    path_boxes = r"C:\Users\tkamy\Documents\Unreal Projects\Airsim_Taibi\PythonClient\multirotor\training_data\boxes"
+    path_raw =  r".\training_data\raw"
+    path_labels = r".\training_data\labels"
+    path_boxes = r".\training_data\boxes"
     drone = AirSimClientDrone("Drone1")
     drone2 = AirSimClientDrone("Drone2")
     drone.takeoff(-10,True) 
     drone2.takeoff(-10,True)
+    liste = []
+    i = 0
     position = drone.get_position()
-    for i in range(50):
-        drone.move(50,0,position.z_val,4)
-        drone2.move(50,0,position.z_val,4)
+    for waypoint_track in waypoints_track:
+        x,y,z = waypoint_track
+        x1,y1,z1 = waypoints_target[waypoints_track.index(waypoint_track)]
+        drone.move(x,y,z,velocity_track)
+        drone2.move(x1,y1,z1,velocity_target)
         raw = drone.take_raw_photo("high_res")
         photo = raw.copy()
         photo,cylinders = drone.take_box_photo("Drone2","high_res",photo)
         
         try:
-            drone.box_info(0,cylinders[0].box2D.min.x_val,cylinders[0].box2D.min.y_val,cylinders[0].box2D.max.x_val,cylinders[0].box2D.max.y_val,720,576,path_labels,i)
+            liste = drone.box_info(0,cylinders[0].box2D.min.x_val,cylinders[0].box2D.min.y_val,cylinders[0].box2D.max.x_val,cylinders[0].box2D.max.y_val,720,576,path_labels,i)
         except IndexError:
             print("No box detected")
         else:
             drone.save_photo(raw,i,path_raw)
             drone.save_photo(photo,i,path_boxes)
+            drone.save_box_info(liste,path_labels,i)
+            i += 1
 
-    drone.rotate(90,1)
-    drone.move(50,50,position.z_val,4)
-    #drone.rotate(90,1)
-    #drone.move(drone.initial_position.x_val,drone.initial_position.y_val,drone.initial_position.z_val,4)
     drone.land()
     

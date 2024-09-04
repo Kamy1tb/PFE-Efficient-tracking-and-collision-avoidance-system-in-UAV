@@ -73,11 +73,17 @@ class Environment1(object):
         self.state= [0 for i in range(23)]
         self.generate_state()
         self.steps = 0
-        self.nbCollision = 0
+        #self.nbCollision = 0
           
         return self.state
 
     def _compute_reward(self):
+        collision = self.drone.detect_collision()
+        rc = 0
+        if collision:
+            self.nbCollision += 1
+            rc = -5
+        
         r_ang = 0
         dist = np.linalg.norm([ self.state[6] - 0.5 , self.state[7] - 0.5 ]) #distance from center
         if self.state[6] <0 :
@@ -99,7 +105,7 @@ class Environment1(object):
             self.nbSuccess += 1
 
         print(f"r_center = {r_ang} , rd = {rd}")
-        return rd + r_ang , self.done
+        return rd + r_ang + rc , self.done
                 
     
 
